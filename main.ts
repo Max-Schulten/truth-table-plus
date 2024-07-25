@@ -203,12 +203,12 @@ export default class TruthTablePlugin extends Plugin {
 						table += `| ${stringVals.join(' | ')} | ${String(truth).charAt(0).toUpperCase() + String(truth).slice(1)} |\n`
 					}
 				} catch (error) {
-					new Notice('Something Went Wrong. \n Error Code: ' + error)
+					new Notice('Something went wrong. \n Error: ' + error)
 				}
 			}
 			return table;
 		} else {
-			new Notice('Your Logic Expression or Variables List was incorrect. Please try again.', 10000)
+			new Notice('Your logic expression or variables list was incorrect. Please try again.', 5000)
 			return ''
 		}
 	}
@@ -228,11 +228,11 @@ class SampleSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h1', { text: 'Truth Table+ Settings:' });
+		containerEl.createEl('h1', { text: 'Truth Table+ settings:' });
 
 		new Setting(containerEl)
-			.setName('Use Math Blocks and Symbols for Entries and Header')
-			.setDesc('When off will use default JS logic symbols (i.e. &&, ||, !)')
+			.setName('Use math blocks and symbols for entries and header.')
+			.setDesc('When off will use default JS logic symbols (i.e. &&, ||, !).')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.latex === true)
 				.onChange(async (value) => {
@@ -241,7 +241,7 @@ class SampleSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Output true/false values as binary')
+			.setName('Output true/false values as binary.')
 			.setDesc('When on 1 = true, 0 = false.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.binary === true)
