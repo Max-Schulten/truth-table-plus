@@ -12,10 +12,11 @@ export class InputModal extends Modal {
 
   onOpen() {
     const { contentEl } = this;
-    contentEl.createEl('h2', { text: 'Enter logical expression' });
+    contentEl.createEl('h2', { text: 'Enter logical expression & variables:' });
 
     new Setting(contentEl)
       .setName('Expression')
+      .setDesc('Please use JS logic symbols: && = and, || = or, ! = negation. (ex. !a&&b||c)')
       .addText((text) =>
         text.onChange((value) => {
           this.result = value;
@@ -24,8 +25,14 @@ export class InputModal extends Modal {
     
     new Setting(contentEl)
       .setName('Variables')
+      .setDesc('Please enter all variables used above in a comma seperated list. (ex. a,b,c)')
       .addText((text) => text.onChange((value) => {
-        this.vars = Array.from(value)
+        const arr = []
+        value = value.replace(/,|\s/g, '')
+        for(const x of value) {
+          arr.push(x)
+        }
+        this.vars = arr
       })
     )
 
