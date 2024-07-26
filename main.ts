@@ -27,7 +27,7 @@ export default class TruthTablePlugin extends Plugin {
 			callback: () => new InputModal(this.app, (exp, vars) => this.createTruthTable(exp, vars)).open(),
 		});
 
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new SettingTab(this.app, this));
 
 	}
 
@@ -215,7 +215,7 @@ export default class TruthTablePlugin extends Plugin {
 
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class SettingTab extends PluginSettingTab {
 	plugin: TruthTablePlugin;
 
 	constructor(app: App, plugin: TruthTablePlugin) {
