@@ -1,4 +1,4 @@
-import { App, Plugin, MarkdownView, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, MarkdownView, Notice, PluginSettingTab, Setting, Editor } from 'obsidian';
 import { InputModal } from './InputModal';
 
 interface PluginSettings {
@@ -24,7 +24,7 @@ export default class TruthTablePlugin extends Plugin {
 		this.addCommand({
 			id: 'generate-truth-table',
 			name: 'Generate truth table',
-			callback: () => new InputModal(this.app, (exp, vars) => this.createTruthTable(exp, vars)).open(),
+			editorCallback: (editor: Editor, view: MarkdownView) => new InputModal(this.app, (exp, vars) => this.createTruthTable(view, exp, vars)).open(),
 		});
 
 		this.addSettingTab(new SettingTab(this.app, this));
@@ -103,8 +103,7 @@ export default class TruthTablePlugin extends Plugin {
 		} else { return false }
 	}
 
-	createTruthTable(e: string, v: string[]) {
-		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+	createTruthTable(activeView: MarkdownView, e: string, v: string[]) {
 		if (activeView) {
 			const editor = activeView.editor
 			const truthTable = this.generateTruthTable(e, v);
@@ -227,8 +226,6 @@ class SettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-
-		containerEl.createEl('h1', { text: 'Truth Table+ settings:' });
 
 		new Setting(containerEl)
 			.setName('Use math blocks and symbols for entries and header.')
