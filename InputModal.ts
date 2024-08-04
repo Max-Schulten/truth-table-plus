@@ -2,10 +2,9 @@ import { App, Modal, Setting } from 'obsidian';
 
 export class InputModal extends Modal {
   result: string;
-  vars: string[];
-  onSubmit: (result: string, vars: string[]) => void;
+  onSubmit: (result: string) => void;
 
-  constructor(app: App, onSubmit: (result: string, vars: string[]) => void) {
+  constructor(app: App, onSubmit: (result: string) => void) {
     super(app);
     this.onSubmit = onSubmit;
   }
@@ -22,19 +21,6 @@ export class InputModal extends Modal {
           this.result = value;
         })
       );
-    
-    new Setting(contentEl)
-      .setName('Variables')
-      .setDesc('Please enter all variables used above in a comma seperated list. (ex. a,b,c)')
-      .addText((text) => text.onChange((value) => {
-        const arr = []
-        value = value.replace(/,|\s/g, '')
-        for(const x of value) {
-          arr.push(x)
-        }
-        this.vars = arr
-      })
-    )
 
     new Setting(contentEl)
       .addButton((btn) =>
@@ -43,7 +29,8 @@ export class InputModal extends Modal {
           .setCta()
           .onClick(() => {
             this.close();
-            this.onSubmit(this.result, this.vars);
+            // Normalizing input now so I don't gotta do it later
+            this.onSubmit(this.result.toLowerCase().replace(/\s+/g, ''));
           })
       );
   }

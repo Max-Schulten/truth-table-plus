@@ -1,11 +1,14 @@
 import { App, Plugin, MarkdownView, Notice, PluginSettingTab, Setting, Editor } from 'obsidian';
 import { InputModal } from './InputModal';
+import Utils from 'utils';
 
+// Schema for the settings
 interface PluginSettings {
 	latex: boolean,
 	binary: boolean
 }
 
+// Setting default values for above
 const DEFAULT_SETTINGS: PluginSettings = {
 	latex: true,
 	binary: false
@@ -17,16 +20,19 @@ export default class TruthTablePlugin extends Plugin {
 
 
 	async onload() {
+		// Loading previously saved settings
 		await this.loadSettings();
 		console.log('Loading Truth Table+');
 
-		// Add a command to generate a truth table
+		// Adding a command to generate a truth table
 		this.addCommand({
 			id: 'generate-truth-table',
 			name: 'Generate truth table',
-			editorCallback: (editor: Editor, view: MarkdownView) => new InputModal(this.app, (exp, vars) => this.createTruthTable(view, exp, vars)).open(),
+			// Creating a new modal to get expression, runs createTruthTable on submit
+			editorCallback: (editor: Editor, view: MarkdownView) => new InputModal(this.app, (exp) => this.createTruthTable(view, exp)).open(),
 		});
 
+		// Adds the settings tab
 		this.addSettingTab(new SettingTab(this.app, this));
 
 	}
@@ -35,123 +41,47 @@ export default class TruthTablePlugin extends Plugin {
 		console.log('Unloading Truth Table+');
 	}
 
+	// Pulls user settings from memory
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
+	// Puts user settings to memory
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
 
-	isLetter(s: string): boolean {
-		return s.toLowerCase() != s.toUpperCase()
-	}
-
-	isValidCase(exp: string, vars: string[]): boolean {
-		const validatedIndices = new Map<number, boolean>()
-		let openParen = 0
-		let closeParen = 0
-
-		for (let i = 0; i < exp.length; i++) {
-			if (exp.charAt(i) == '(') {
-				openParen++;
-			} else if (exp.charAt(i) == ')') {
-				closeParen++;
-			} else if (validatedIndices.get(i) != true) {
-				if (this.isLetter(exp.charAt(i)) && vars.contains(exp.charAt(i))) {
-					try {
-						if (!this.isLetter(exp.charAt(i + 1))) {
-							validatedIndices.set(i, true);
-						}
-					} catch (error) {
-						return false;
-					}
-				} else if (exp.charAt(i) === "&") {
-					try {
-						if (exp.charAt(i + 1) === '&') {
-							validatedIndices.set(i, true);
-							validatedIndices.set(i + 1, true)
-						}
-					} catch (error) {
-						return false;
-					}
-				} else if (exp.charAt(i) === "|") {
-					try {
-						if (exp.charAt(i + 1) === '|') {
-							validatedIndices.set(i, true);
-							validatedIndices.set(i + 1, true)
-						}
-					} catch (error) {
-						return false;
-					}
-				} else if (exp.charAt(i) === "!") {
-					try {
-						if (this.isLetter(exp.charAt(i + 1))) {
-							validatedIndices.set(i, true);
-							validatedIndices.set(i + 1, true)
-						} else if (exp.charAt(i + 1) == '(') {
-							validatedIndices.set(i, true)
-						}
-					} catch (error) {
-						return false;
-					}
-				} else { return false }
-			}
-		}
-		if (openParen == closeParen) {
-			return true;
-		} else { return false }
-	}
-
-	createTruthTable(activeView: MarkdownView, e: string, v: string[]) {
+	// Will always be called when the modal is submitted
+	createTruthTable(activeView: MarkdownView, e: string) {
+		// Proceeding only if there is an active view 
 		if (activeView) {
 			const editor = activeView.editor
-			const truthTable = this.generateTruthTable(e, v);
+			// Generates the actual plain text
+			const truthTable = this.generateTruthTable(e, Utils.extractVars(e));
 			editor.replaceSelection(truthTable);
 		} else {
 			console.error('No active markdown view found')
 		}
 	}
 
-	allCombinations(num: number): boolean[][] {
-		const combinations = [];
-		for (let i = 0; i < (1 << num); i++) {
-			const combination = [];
-			for (let j = num - 1; j >= 0; j--) {
-				combination.push((i & (1 << j)) !== 0);
-			}
-			combinations.push(combination);
-		}
-		return combinations;
-	}
 
-	evaluateTruth(vals: boolean[], expression: string, vars: string[]): boolean {
-
-		let parsed = expression
-		for (const char of expression) {
-			const i = vars.indexOf(char)
-			if (i !== -1) {
-				parsed = parsed.replace(char, String(vals[i]))
-			}
-		}
-
-		return eval(parsed)
-	}
-
+	// Is only ever called by the above
 	generateTruthTable(expression: string, vars: string[]): string {
 
+		// Checking if the expression is valid, doesn't bother if not
+		if (Utils.isValidCase(expression, vars)) {
 
-		if (this.isValidCase(expression, vars)) {
-
-			const combinations = this.allCombinations(vars.length)
+			// Gets the var values with bitwise operations 
+			const combinations = Utils.allCombinations(vars.length)
 
 			let table: string;
 
+			// Replaces the JS style logic vars (i.e. &&, ||) with LaTeX symbols for typesetting
 			if (this.settings.latex == true) {
 				let latexExpression = ``
 
 				for (let i = 0; i < expression.length; i++) {
-					if (this.isLetter(expression.charAt(i)) || expression.charAt(i) == '(' || expression.charAt(i) == ')') {
+					if (Utils.isLetter(expression.charAt(i)) || expression.charAt(i) == '(' || expression.charAt(i) == ')') {
 						latexExpression = latexExpression + expression.charAt(i)
 					} else if (expression.charAt(i) == '&') {
 						latexExpression += ' \\wedge '
@@ -165,8 +95,10 @@ export default class TruthTablePlugin extends Plugin {
 				}
 
 				latexExpression = `$` + latexExpression + `$`
+				// Creates the header
 				table = `| ${vars.join(' | ')} | ${latexExpression} |\n`
 			} else {
+				// If we aren't using LaTeX need to escape the pipes since they are also used to make a table
 				let modifiedExp = ''
 				for (const x of expression) {
 					if (x == '|') {
@@ -178,23 +110,29 @@ export default class TruthTablePlugin extends Plugin {
 				table = `| ${vars.join(' | ')} | ${modifiedExp} |\n`
 			}
 
+			// Adding divider to establish body
 			table += `| ${'-|'.repeat(vars.length)}-|\n`
 
+			// Gets each rows truth values
 			for (let i = 0; i < combinations.length; i++) {
 				const vals = []
 				for (let j = 0; j < vars.length; j++) {
 					vals.push(combinations[i][j])
 				}
 				try {
-					const truth = this.evaluateTruth(vals, expression, vars)
+					// Evaluates the truth by row
+					const truth = Utils.evaluateTruth(vals, expression, vars)
 
+					// Converts booleans to binary
 					if (this.settings.binary) {
 						const numVals = []
 						for (const x of vals) {
 							numVals.push(Number(x))
 						}
 						table += `| ${numVals.join(' | ')} | ${Number(truth)} |\n`
-					} else {
+					}
+					// Makes truth values pretty in capital case
+					else {
 						const stringVals = []
 						for (const x of vals) {
 							stringVals.push(String(x).charAt(0).toUpperCase() + String(x).slice(1))
@@ -203,15 +141,15 @@ export default class TruthTablePlugin extends Plugin {
 					}
 				} catch (error) {
 					new Notice('Something went wrong. \n Error: ' + error)
+					return ''
 				}
 			}
 			return table;
 		} else {
-			new Notice('Your logic expression or variables list was incorrect. Please try again.', 5000)
+			new Notice('Your logic expression was invalid. Please try again.', 5000)
 			return ''
 		}
 	}
-
 }
 
 class SettingTab extends PluginSettingTab {
