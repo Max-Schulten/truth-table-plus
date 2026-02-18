@@ -106,18 +106,11 @@ export default class Utils {
 
     
 	public static evaluateTruth(vals: boolean[], expression: string, vars: string[]): boolean {
-		let parsed = expression
-        // Iterating over every character in the expression and replacing it with its appropriate value
-        // vals and vars have their indices matched here
-		for (const char of expression) {
-			const i = vars.indexOf(char)
-			if (i !== -1) {
-				parsed = parsed.replace(char, String(vals[i]))
-			}
+		let parsed = expression;
+		for (let i = 0; i < vars.length; i++) {
+			parsed = parsed.replace(new RegExp(`\\b${vars[i]}\\b`, 'g'), String(vals[i]));
 		}
-
-        // Using eval since relatively low stakes, also passing in anything besides a logic expression wonn't reach this eval call
-		return eval(parsed)
+		return eval(parsed);
 	}
 
     public static extractVars(e: string): string[] {

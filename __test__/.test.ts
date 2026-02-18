@@ -39,7 +39,7 @@ describe('Utils class', () => {
         it('Should return false for special character "!"', () => {
             expect(Utils.isLetter('!')).toBe(false);
         });
-
+``
         it('Should return false for special character "@"', () => {
             expect(Utils.isLetter('@')).toBe(false);
         });
